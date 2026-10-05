@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+export PATH="$repo_root/.venv/Scripts:$PATH"
+
+"$repo_root/.venv/Scripts/pre-commit.exe" run --all-files "$@"
