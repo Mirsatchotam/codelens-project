@@ -1,98 +1,192 @@
 # CodeLens
 
-**CodeLens** is a Python source code analyzer built with Python's AST module and FastAPI.
-
-It analyzes Python source code without executing it and returns a structured JSON report.
+**CodeLens is a Python source code analyzer built with FastAPI and Python's Abstract Syntax Tree (AST).** It analyzes Python code, identifies structural elements, measures function complexity, and reports potentially long functions.
 
 ## Features
 
-- Detects regular and asynchronous functions
-- Detects classes, loops, and conditional expressions
-- Extracts imports and function or method calls
-- Reports syntax errors with line and column information
-- Calculates total, non-empty, and comment line counts
-- Provides a REST API with request validation and typed response schemas
-- Includes automated tests for the analyzer and API
+- **Function detection** — identifies regular and asynchronous functions with their names and line numbers.
+- **Cyclomatic complexity** — calculates a complexity score for each function.
+- **Complexity classification** — categorizes functions as `low`, `moderate`, `high`, or `very_high`.
+- **Long function detection** — identifies functions occupying more than 50 source lines.
+- **Class detection** — finds class definitions and their line numbers.
+- **Control flow analysis** — detects loops and conditional expressions.
+- **Import analysis** — identifies `import` and `from ... import ...` statements.
+- **Call analysis** — detects function calls and method calls.
+- **Syntax error reporting** — returns syntax error messages with line and column information.
+- **Code statistics** — reports total lines, non-empty lines, and lines containing comments.
+- **REST API** — exposes analysis functionality through FastAPI.
+- **Automated tests** — tests the analyzer and API using pytest.
 
 ## Tech Stack
 
-- Python
-- FastAPI
-- Pydantic
-- Python AST and `tokenize`
-- pytest
+- **Python** — core language
+- **FastAPI** — REST API
+- **Pydantic** — request validation and response schemas
+- **AST (`ast`)** — Python source code parsing and structural analysis
+- **`tokenize`** — comment detection
+- **pytest** — automated testing
 
 ## Project Structure
 
 ```text
-app/
-├── analyzer.py
-├── main.py
-├── schemas.py
-└── __init__.py
-tests/
-├── test_analyzer.py
-└── test_api.py
+CodeLens/
+├── app/
+│   ├── __init__.py
+│   ├── analyzer.py
+│   ├── main.py
+│   └── schemas.py
+├── tests/
+│   ├── test_analyzer.py
+│   └── test_api.py
+├── README.md
+└── requirements.txt
 ```
 
 ## Installation
 
-Create and activate a virtual environment, then install the dependencies:
+Clone the repository and navigate to the project directory:
 
 ```bash
-python -m venv .venv
+git clone https://github.com/Mirsatchotam/codelens-project.git
+cd codelens-project
 ```
 
-Windows PowerShell:
+Create and activate a virtual environment.
+
+**Windows PowerShell:**
 
 ```powershell
-.\.venv\Scripts\Activate.ps1
+python -m venv .venv
+.venv\Scripts\Activate.ps1
 ```
 
-Install the packages:
+Install dependencies:
 
 ```bash
-pip install fastapi uvicorn pytest httpx
+pip install -r requirements.txt
 ```
 
 ## Run the API
 
-From the project root, run:
+Start the development server:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-Open the interactive API documentation:
+The API will be available at:
 
-`http://127.0.0.1:8000/docs`
+- **API root:** http://127.0.0.1:8000/
+- **Interactive API documentation:** http://127.0.0.1:8000/docs
+- **OpenAPI schema:** http://127.0.0.1:8000/openapi.json
 
-## Example Request
+## Usage
 
-Send a `POST` request to `/analyze` with this JSON body:
+Send a `POST` request to `/analyze` with Python source code in the request body.
+
+### Example request
 
 ```json
 {
-  "code": "def greet(name):\n    print(name)"
+  "code": "def classify(n):\n    if n > 0:\n        return 'positive'\n    return 'non-positive'"
 }
 ```
 
-The response includes detected functions, calls, syntax errors, and code statistics.
+### Example response
+
+The following is a shortened example of the response structure:
+
+```json
+{
+  "code_details": {
+    "functions": {
+      "regular_function": [
+        {
+          "name": "classify",
+          "line": 1,
+          "complexity": 2,
+          "complexity_level": "low"
+        }
+      ],
+      "async_function": []
+    },
+    "syntax_errors": [],
+    "loops": [],
+    "conditions": [
+      {
+        "type": "If",
+        "line": 2
+      }
+    ],
+    "imports": [],
+    "function_calls": [],
+    "method_calls": [],
+    "classes": [],
+    "long_functions": []
+  },
+  "overview": {
+    "total_lines": 4,
+    "non_empty_lines": 4,
+    "comment_lines": 0
+  }
+}
+```
+
+The response includes structural details and code statistics. The exact result depends on the submitted source code.
+
+## Complexity Metrics
+
+CodeLens uses a simplified cyclomatic complexity calculation:
+
+\[
+M = 1 + D
+\]
+
+Where:
+
+- \(M\) is cyclomatic complexity.
+- \(D\) is the number of decision points detected by the analyzer.
+
+The current implementation counts conditional statements, loops, exception handlers, and additional operands in Boolean expressions.
+
+| Complexity | Classification |
+|---:|---|
+| 1–5 | `low` |
+| 6–10 | `moderate` |
+| 11–20 | `high` |
+| 21+ | `very_high` |
+
+These thresholds are configurable design choices, not universal quality standards.
 
 ## Run Tests
+
+Run the automated test suite:
 
 ```bash
 python -m pytest -v
 ```
 
-## Current Scope and Limitations
+The tests cover source code analysis, syntax errors, nested functions, complexity calculations, long function detection, and API behavior.
 
-CodeLens currently performs structural analysis of Python source code. It does not execute submitted code, and it is not yet a full static-analysis or security-auditing tool.
+## Limitations
+
+- CodeLens analyzes Python source code without executing it.
+- Cyclomatic complexity is a simplified metric and may differ from specialized static analysis tools.
+- The long-function threshold is currently fixed at more than 50 source lines.
+- The analyzer is not a complete static analysis, type-checking, or security auditing tool.
+- The project is under active development.
 
 ## Roadmap
 
-- Expand test coverage for edge cases
-- Improve analysis of nested and complex Python expressions
-- Add complexity metrics
-- Improve error reporting and API documentation
-- Add deployment instructions and a hosted demo
+Potential future improvements include:
+
+- Configurable analysis thresholds
+- Duplicate code detection
+- Cognitive complexity metrics
+- More edge-case and integration tests
+- Improved diagnostics and reporting
+- Deployment and CI automation
+
+## License
+
+No license has been specified yet. Add a license before distributing the project for reuse.

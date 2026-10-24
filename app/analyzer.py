@@ -1,5 +1,6 @@
 
 import ast
+from platform import node
 import tokenize
 from io import BytesIO
 
@@ -40,6 +41,7 @@ def analyze_code(code: str) -> dict:
             "function_calls": [],
             "method_calls": [],
             "classes": [],
+            "long_functions": [],
         },
         "overview": {
             "total_lines": len(lines),
@@ -69,13 +71,37 @@ def analyze_code(code: str) -> dict:
             details["functions"]["regular_function"].append({
                 "name": node.name,
                 "line": node.lineno,
+                "complexity": calculate_complexity(node),
+                "complexity_level": get_complexity_level(
+                    calculate_complexity(node)
+                ),
             })
+            function_length = get_function_length(node)
+
+            if function_length > 50:
+                details["long_functions"].append({
+                    "name": node.name,
+                    "line": node.lineno,
+                    "length": function_length,
+                })
 
         elif isinstance(node, ast.AsyncFunctionDef):
             details["functions"]["async_function"].append({
                 "name": node.name,
                 "line": node.lineno,
+                "complexity": calculate_complexity(node),
+                "complexity_level": get_complexity_level(
+                    calculate_complexity(node)
+                ),
             })
+            function_length = get_function_length(node)
+
+            if function_length > 50:
+                details["long_functions"].append({
+                    "name": node.name,
+                    "line": node.lineno,
+                    "length": function_length,
+                })
 
         elif isinstance(node, ast.ClassDef):
             details["classes"].append({
@@ -131,3 +157,55 @@ def analyze_code(code: str) -> dict:
         value.sort(key=lambda item: item["line"])
 
     return result
+
+
+def calculate_complexity(node: ast.FunctionDef | ast.AsyncFunctionDef) -> int:
+    """Calculate cyclomatic complexity of a function."""
+    complexity = 1
+
+    def visit(current_node: ast.AST) -> None:
+        nonlocal complexity
+
+        # Nested functions and classes are analyzed separately.
+        if current_node is not node and isinstance(
+            current_node,
+            (
+                ast.FunctionDef,
+                ast.AsyncFunctionDef,
+                ast.ClassDef,
+                ast.Lambda,
+            ),
+        ):
+            return
+
+        if isinstance(current_node, ast.If):
+            complexity += 1
+
+        elif isinstance(current_node, (ast.For, ast.AsyncFor, ast.While)):
+            complexity += 1
+
+        elif isinstance(current_node, ast.ExceptHandler):
+            complexity += 1
+
+        elif isinstance(current_node, ast.BoolOp):
+            complexity += len(current_node.values) - 1
+
+        for child in ast.iter_child_nodes(current_node):
+            visit(child)
+
+    visit(node)
+    return complexity
+
+def get_complexity_level(complexity: int) -> str:
+    """Return a human-readable complexity level."""
+    if complexity <= 5:
+        return "low"
+    elif complexity <= 10:
+        return "moderate"
+    elif complexity <= 20:
+        return "high"
+    return "very_high"
+
+def get_function_length(node: ast.FunctionDef | ast.AsyncFunctionDef) -> int:
+    """Return the number of source lines occupied by a function."""
+    return node.end_lineno - node.lineno + 1

@@ -20,6 +20,9 @@ class NamedLocation(BaseModel):
     name: str
     line: int
 
+class FunctionLocation(NamedLocation):
+    complexity: int = Field(ge=1)
+    complexity_level: str
 
 class LoopDetail(BaseModel):
     type: str
@@ -39,8 +42,8 @@ class ImportDetail(BaseModel):
 
 
 class FunctionDetails(BaseModel):
-    regular_function: list[NamedLocation]
-    async_function: list[NamedLocation]
+    regular_function: list[FunctionLocation]
+    async_function: list[FunctionLocation]
 
 
 class FunctionCallDetail(BaseModel):
@@ -62,6 +65,7 @@ class CodeDetails(BaseModel):
     function_calls: list[FunctionCallDetail]
     method_calls: list[MethodCallDetail]
     classes: list[NamedLocation]
+    long_functions: list[LongFunctionDetail]
 
 
 class CodeOverview(BaseModel):
@@ -73,3 +77,8 @@ class CodeOverview(BaseModel):
 class CodeAnalysisResponse(BaseModel):
     code_details: CodeDetails
     overview: CodeOverview
+
+class LongFunctionDetail(BaseModel):
+    name: str
+    line: int
+    length: int

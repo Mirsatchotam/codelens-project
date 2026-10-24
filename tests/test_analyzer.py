@@ -111,8 +111,18 @@ def test_detects_nested_function_with_correct_line():
     functions = result["code_details"]["functions"]["regular_function"]
 
     assert functions == [
-        {"name": "outer", "line": 1},
-        {"name": "inner", "line": 2},
+        {
+            "name": "outer",
+            "line": 1,
+            "complexity": 1,
+            "complexity_level": "low",
+        },
+        {
+            "name": "inner",
+            "line": 2,
+            "complexity": 1,
+            "complexity_level": "low",
+        },
     ]
 
 
@@ -142,3 +152,65 @@ def test_syntax_error_does_not_return_partial_structure():
     assert len(details["syntax_errors"]) == 1
     assert details["syntax_errors"][0]["line"] == 4
     assert details["functions"]["regular_function"] == []
+
+def test_nested_function_complexity_is_separate():
+    code = (
+        "def outer():\n"
+        "    if True:\n"
+        "        def inner():\n"
+        "            if True:\n"
+        "                return 1\n"
+        "    return 0\n"
+    )
+
+    result = analyze_code(code)
+    functions = result["code_details"]["functions"]["regular_function"]
+
+    assert functions == [
+        {
+            "name": "outer",
+            "line": 1,
+            "complexity": 2,
+            "complexity_level": "low",
+        },
+        {
+            "name": "inner",
+            "line": 3,
+            "complexity": 2,
+            "complexity_level": "low",
+        },
+    ]
+
+def test_complexity_levels():
+    from app.analyzer import get_complexity_level
+
+    assert get_complexity_level(1) == "low"
+    assert get_complexity_level(5) == "low"
+    assert get_complexity_level(6) == "moderate"
+    assert get_complexity_level(10) == "moderate"
+    assert get_complexity_level(11) == "high"
+    assert get_complexity_level(20) == "high"
+    assert get_complexity_level(21) == "very_high"
+
+def test_detects_long_functions():
+    from app.analyzer import analyze_code
+
+    short_code = "def short():\n" + "    pass\n" * 49
+    long_code = "def long():\n" + "    pass\n" * 50
+
+    short_result = analyze_code(short_code)
+    long_result = analyze_code(long_code)
+
+    assert short_result["code_details"]["long_functions"] == []
+    assert long_result["code_details"]["long_functions"] == [
+        {"name": "long", "line": 1, "length": 51}
+    ]
+
+def test_detects_long_async_function():
+    code = "async def long_task():\n" + "    pass\n" * 50
+
+    result = analyze_code(code)
+
+    assert result["code_details"]["long_functions"] == [
+        {"name": "long_task", "line": 1, "length": 51}
+    ]
