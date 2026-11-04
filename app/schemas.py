@@ -55,6 +55,10 @@ class MethodCallDetail(BaseModel):
     name: str
     line: int
 
+class LongFunctionDetail(BaseModel):
+    name: str
+    line: int
+    length: int
 
 class CodeDetails(BaseModel):
     functions: FunctionDetails
@@ -78,7 +82,3 @@ class CodeAnalysisResponse(BaseModel):
     code_details: CodeDetails
     overview: CodeOverview
 
-class LongFunctionDetail(BaseModel):
-    name: str
-    line: int
-    length: int
